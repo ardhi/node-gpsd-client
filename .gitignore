@@ -1,0 +1,7 @@
+node_modules
+npm-debug.log
+.node_history
+.DS_STORE
+.npmignore
+coverage
+package-lock.json
