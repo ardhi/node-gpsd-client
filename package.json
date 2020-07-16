@@ -1,0 +1,22 @@
+{
+  "name": "node-gpsd-client",
+  "version": "1.0.0",
+  "description": "A nodejs GPSD client library",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ardhi/node-gpsd-client.git"
+  },
+  "keywords": [
+    "gpsd"
+  ],
+  "author": "Ardhi Lukianto <ardhi@lukianto.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ardhi/node-gpsd-client/issues"
+  },
+  "homepage": "https://github.com/ardhi/node-gpsd-client#readme"
+}
