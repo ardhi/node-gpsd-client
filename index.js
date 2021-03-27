@@ -58,12 +58,16 @@ function Gpsd (options) {
   })
 
   this.socket.on('close', err => {
+    this.emit('disconnected', err)
     this.connected = false
-    if (this.autoReconnect > 0) {
-      this.reconnect()
-    } else {
-      this.emit('disconnected', err)
-    }
+    if (this.autoReconnect > 0) this.reconnect()
+  })
+
+  this.socket.on('timeout', () => {
+    this.emit('timeout')
+    this.connected = false
+    if (this.autoReconnect > 0) this.reconnect()
+    else this.socket.end()
   })
 
   this.socket.on('connect', sock => {
