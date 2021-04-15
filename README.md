@@ -16,7 +16,6 @@ const Gpsd = require('node-gpsd-client')
 const client = new Gpsd({
   port: 2947,              // default
   hostname: 'localhost',   // default
-  autoReconnect: 5,        // every 5 second
   parse: true
 })
 
@@ -44,7 +43,10 @@ client.connect()
 
 - `port`: set GPSD port, defaults to **2947**
 - `hostname`: set GPSD hostname, defaults to **localhost**
-- `autoReconnect`: set auto reconnect interval, in seconds. Defaults to **0**, meaning: no auto reconnect if socket is closed
 - `parse`: parse data as JSON object
+- `reconnectThreshold`: max seconds to consider connection is dead since last data received, defaults to **0**
+- `reconnectInterval`: interval in seconds to detect a connection, defaults to **0**
+
+Reconnection will only run when both `reconnectThreshold` and `reconnectInterval` is greater than 0.
 
 License: MIT

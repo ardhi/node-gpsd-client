@@ -7,22 +7,28 @@ function Gpsd (options) {
   options = options || {}
   this.port = options.port || 2947
   this.hostname = options.hostname || 'localhost'
-  this.autoReconnect = options.autoReconnect || 0
   this.parse = options.parse !== undefined ? options.parse : true
+  this.reconnectInterval = options.reconnectInterval || 0
+  this.reconnectThreshold = options.reconnectThreshold || 0
   this.connected = false
   this.socket = new net.Socket()
   this.socket.setEncoding('ascii')
+  this.lastReceived = null
 
   events.EventEmitter.call(this)
-
   const received = new MessageBuffer('\n')
 
   this.reconnect = () => {
-    if (this.reconnectInterval) return
-    this.reconnectInterval = setInterval(() => {
+    const now = new Date().getTime()
+    if (!this.lastReceived) this.lastReceived = now
+    const threshold = this.reconnectThreshold * 1000
+    const diff = now - this.lastReceived
+    if (diff > threshold) {
       this.emit('reconnecting')
-      this.socket.connect(this.port, this.hostname)
-    }, this.autoReconnect * 1000)
+      this.connected = false
+      this.socket.destroy()
+      this.connect()
+    }
   }
 
   this.handleMessage = message => {
@@ -51,6 +57,7 @@ function Gpsd (options) {
   }
 
   this.socket.on('data', payload => {
+    this.lastReceived = new Date().getTime()
     received.push(payload)
     while (!received.isFinished()) {
       this.handleMessage(received.handleData())
@@ -60,41 +67,36 @@ function Gpsd (options) {
   this.socket.on('close', err => {
     this.emit('disconnected', err)
     this.connected = false
-    if (this.autoReconnect > 0) this.reconnect()
   })
 
   this.socket.on('timeout', () => {
     this.emit('timeout')
     this.connected = false
-    if (this.autoReconnect > 0) this.reconnect()
-    else this.socket.end()
+    this.socket.end()
   })
 
   this.socket.on('connect', sock => {
     this.connected = true
-    if (this.reconnectInterval) {
-      clearInterval(this.reconnectInterval)
-      this.reconnectInterval = undefined
-    }
     this.emit('connected', sock)
   })
 
   this.socket.on('error', err => {
-    if (err.code === 'ECONNREFUSED') {
-      this.emit('error.connection')
-    } else {
-      this.emit('error.socket', err)
-    }
+    if (err.code === 'ECONNREFUSED' || err.code === 'ECONNRESET') return
+    this.emit('socket', err)
   })
 
-  return (this)
+  if (this.reconnectInterval > 0 && this.reconnectThreshold > 0) {
+    setInterval(this.reconnect, this.reconnectInterval * 1000)
+  }
+
+  return this
 }
 
 util.inherits(Gpsd, events.EventEmitter)
 
 Gpsd.prototype.connect = function (callback) {
   this.socket.connect(this.port, this.hostname)
-
+  this.socket.setKeepAlive(true, 5000)
   if (callback !== undefined) {
     this.socket.once('connect', sock => {
       callback(sock)
